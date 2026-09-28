@@ -276,6 +276,12 @@ void on_change_systray(void *obj)
     if (systray.icons_per_column == 0 || systray.icons_per_row == 0)
         return;
 
+    // SAFETY CHECK: Validate icon_size
+    if (systray.icon_size <= 0) {
+        fprintf(stderr, "tint2: WARNING - Invalid icon_size: %d, using default 24\n", systray.icon_size);
+        systray.icon_size = 24;
+    }
+
     // systray.area.posx/posy are computed by rendering engine.
     // Based on this we calculate the positions of the tray icons.
     Panel *panel = systray.area.panel;
@@ -296,6 +302,18 @@ void on_change_systray(void *obj)
     int i;
     for (i = 1, l = systray.list_icons; l; i++, l = l->next) {
         traywin = (TrayWindow *)l->data;
+
+        // SAFETY: Validate traywin pointer FIRST, before using it
+        if (!traywin) {
+            fprintf(stderr, "tint2: ERROR - NULL traywin in systray list\n");
+            continue;
+        }
+
+        // SAFETY: Validate window handle
+        if (traywin->win == None) {
+            fprintf(stderr, "tint2: ERROR - Invalid window handle in traywin\n");
+            continue;
+        }
 
         traywin->y = posy;
         traywin->x = posx;
@@ -334,6 +352,7 @@ void on_change_systray(void *obj)
         Window root;
         if (!XGetGeometry(server.display, traywin->parent, &root, &xpos, &ypos, &width, &height, &border_width, &depth)) {
             fprintf(stderr, RED "tint2: Couldn't get geometry of window!" RESET "\n");
+            continue;
         }
         if (width != traywin->width || height != traywin->height || xpos != traywin->x || ypos != traywin->y) {
             if (systray_profile)
