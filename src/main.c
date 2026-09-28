@@ -418,6 +418,12 @@ void handle_x_event(XEvent *e)
     if (handle_x_event_autohide(e))
         return;
 
+    if (
+      (e->type==ButtonPress || e->type==ButtonRelease || e->type==MotionNotify) && 
+      e->xproperty.window==server.root_win
+    )
+        return;
+
     Panel *panel = get_panel(e->xany.window);
     switch (e->type) {
     case ButtonPress: {
